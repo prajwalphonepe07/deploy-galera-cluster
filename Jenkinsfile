@@ -29,7 +29,6 @@ pipeline {
     stages {
         stage('Prepare Workspace') {
             steps {
-                cleanWs()
                 sh 'sudo chown -R jenkins:jenkins .'
             }
         }
