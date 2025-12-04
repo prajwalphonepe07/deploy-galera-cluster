@@ -30,7 +30,6 @@ pipeline {
         stage('Prepare Workspace') {
             steps {
                 cleanWs()
-                sh 'sudo cp -r /root/ansible/prod/. .'
                 sh 'sudo chown -R jenkins:jenkins .'
             }
         }
