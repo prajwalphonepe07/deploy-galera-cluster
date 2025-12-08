@@ -184,7 +184,14 @@
         login_password: "{{ mysql_root_password }}"
         login_unix_socket: "{{ socket_path }}"
       when: inventory_hostname == groups['mariadb_nodes'][0]
-    
+   
+    - name: Initialize Replication Files
+      community.mysql.mysql_query:
+        query: "RESET REPLICA ALL"
+        login_unix_socket: "{{ socket_path }}"
+      ignore_errors: true
+      when: inventory_hostname in groups['async_node']
+        
     - name: Configure Replica (Async Node)
       community.mysql.mysql_replication:
         mode: changeprimary           
