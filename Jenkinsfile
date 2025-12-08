@@ -56,7 +56,7 @@ pipeline {
                         echo 'ansible_user=user' >> inventory.ini
                         echo 'ansible_ssh_private_key_file=${SSH_KEY_PATH}' >> inventory.ini
                         echo 'ansible_python_interpreter=/usr/bin/python3.10' >> inventory.ini
-			echo 'ansible_become_timeout=60' >> inventory.ini
+                        echo 'ansible_become_timeout=60' >> inventory.ini
                     """
 
                     def payload = """
