@@ -6,7 +6,9 @@ pipeline {
         string(name: 'DB_ROOT_PASS', defaultValue: 'MySecurePass123!', description: 'Root Password')
         string(name: 'APP_USER', defaultValue: 'app_user', description: 'App User')
         string(name: 'APP_PASS', defaultValue: 'AppPass789!', description: 'App Password')
-        
+        string(name: 'ASYNC_HOST', defaultValue: '192.168.56.27', description: 'Async Node IP')
+       
+ 
         text(name: 'SQL_CONFIG_JSON', description: 'MariaDB Config', defaultValue: '''{
   "user": "mysql",
   "port": "3306",
@@ -42,6 +44,11 @@ pipeline {
                     for (ip in ips) { 
                         sh "echo '${ip.trim()}' >> inventory.ini" 
                     }
+		    
+ 		    sh "echo '' >> inventory.ini"
+   		    sh "echo '[async_node]' >> inventory.ini"
+    		    sh "echo '${params.ASYNC_HOST}' >> inventory.ini"
+		   
                     
                     sh """
                         echo '' >> inventory.ini

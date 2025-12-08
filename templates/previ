@@ -1,12 +1,10 @@
-[mysqld]
-# 1. Loop through the JSON parameters from Jenkins
+[galera]
 {% for key, value in galera_final_config.items() %}
 {% if key != 'wsrep_provider' %}
 {{ key }} = {{ value }}
 {% endif %}
 {% endfor %}
 
-# 2. Hardcoded / Template specific settings
 wsrep_provider = {{ galera_final_config.wsrep_provider | default(galera_lib_path) }}
 wsrep_provider_options = "{{ wsrep_provider_options_string }}"
 
@@ -19,8 +17,8 @@ wsrep_node_address = {{ inventory_hostname }}
 wsrep_node_name = {{ ansible_hostname }}
 wsrep_cluster_address = "gcomm://{% for host in groups['mariadb_nodes'] %}{{ host }}{% if not loop.last %},{% endif %}{% endfor %}"
 
-# 3. Replication Settings (Required for the Async Slave to work)
+
+[mysqld]
 log_bin=mysql-bin
 log_slave_updates=1
-# This ID generation is safe and unique per IP
-server_id={{ 100 + (ansible_default_ipv4.address.split('.')[-1] | int) }}
+server_id={{ 100 + (ansible_default_ipv4.address.split('.')[-1] | int) }} 
