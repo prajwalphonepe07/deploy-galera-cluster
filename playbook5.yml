@@ -1,5 +1,5 @@
 ---
-- name: Play 1 - WIPE and Prepare (All Nodes)
+- name: Play 1 - Prepare and Configure (All Nodes)
   hosts: all
   become: true
   
@@ -11,68 +11,38 @@
       - python3-pymysql
 
   tasks:
-    - name: 1. Force Stop Any Running MariaDB
-      shell: |
-        systemctl stop mariadb || true
-        pkill -9 mariadbd || true
-        # fuser -k kills any process accessing these folders
-        fuser -k -m /var/lib/mysql || true
-        fuser -k -m /var/log/mysql || true
-        fuser -k -m /var/tmp/mysql || true
-        fuser -k -m /var/lib/galera_cache || true
-      ignore_errors: true
+    - name: Identify Root Disk
+      shell: lsblk -no pkname $(findmnt -n -o SOURCE /)
+      register: root_disk_check
+      changed_when: false
 
-    - name: 2. Force Unmount Directories
-      shell: "umount -l {{ item }} || true"
-      loop:
-        - /var/lib/mysql
-        - /var/log/mysql
-        - /var/tmp/mysql
-        - /var/lib/galera_cache
-      ignore_errors: true
-    
-    - name: 3. Remove LVM Groups and Volumes
-      community.general.lvg:
-        vg: mysql_vg
-        state: absent
-        force: yes
-      ignore_errors: true
+    - name: Find Safe Candidate Disks
+      set_fact:
+        target_disks: "{{ target_disks | default([]) + ['/dev/' + item.key] }}"
+      when:
+        - item.key != root_disk_check.stdout
+        - item.key | regex_search('sd[a-z]|nvme[0-9]n[0-9]')
+        - item.value.size | human_to_bytes > 5368709120
+      loop: "{{ ansible_devices | dict2items }}"
 
-    # 4. CLEAN FILESYSTEM
-    - name: 4. Wipe Partition Markers
-      shell: "wipefs -a /dev/sdb || true"
-      when: "'sdb' in ansible_devices"
-      ignore_errors: true
-
-    - name: 5. DESTROY Existing Data and Logs
-      file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /var/lib/mysql
-        - /var/log/mysql
-        - /var/tmp/mysql
-        - /var/lib/galera_cache
-        - /root/.my.cnf
-        - /etc/mysql/mariadb.conf.d/60-mariadb.cnf
-        - /etc/mysql/mariadb.conf.d/99-galera.cnf
-        - /etc/mysql/mariadb.conf.d/50-async-server.cnf
-
-    - name: 3. Setup Disks (LVM)
+    # Calls the external task file to handle LVM and Mounts safely
+    - name: 1. Configure Disk and Mounts (Smart Mode)
       import_tasks: tasks/disk_setup.yml
+      when: target_disks is defined
 
-    - name: 4. Install Packages
+    # --- PHASE 2: INSTALLATION ---
+    - name: 2. Install Packages
       apt:
         name: "{{ galera_packages }}"
         state: present
         update_cache: yes
         install_recommends: no
 
-    - name: 5. Disable AppArmor
+    - name: 3. Disable AppArmor
       shell: "ln -s /etc/apparmor.d/usr.sbin.mariadbd /etc/apparmor.d/disable/ || true; apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd || true"
       ignore_errors: true
 
-    - name: 6. Set Directory Permissions (After Mount)
+    - name: 4. Set Directory Permissions
       file:
         path: "{{ item }}"
         state: directory
@@ -86,10 +56,13 @@
         - /var/lib/galera_cache
         - /var/run/mysqld
 
-    - name: 7. Initialize Fresh System Tables
+    - name: 5. Initialize System Tables
+      # CRITICAL SAFETY: Only runs if the DB does not exist yet
       command: mariadb-install-db --user=mysql --datadir=/var/lib/mysql
+      args:
+        creates: /var/lib/mysql/mysql
 
-    - name: 8a. Deploy Galera Configs
+    - name: 6a. Deploy Galera Configs
       template:
         src: "templates/{{ item.src }}"
         dest: "/etc/mysql/mariadb.conf.d/{{ item.dest }}"
@@ -99,8 +72,7 @@
         - { src: 'galera.cnf.j2', dest: '99-galera.cnf' }
       when: inventory_hostname in groups['mariadb_nodes']
 
-    # FIXED: Indentation of 'when' corrected below
-    - name: 8b. Deploy Async Slave Config
+    - name: 6b. Deploy Async Slave Config
       copy:
         dest: /etc/mysql/mariadb.conf.d/50-async-server.cnf
         content: |
@@ -114,7 +86,7 @@
           tmpdir=/var/tmp/mysql
       when: inventory_hostname in groups['async_node']
 
-    - name: 9. Create Client Config
+    - name: 7. Create Client Config
       copy:
         dest: /root/.my.cnf
         mode: '0600'
@@ -124,7 +96,7 @@
           password="{{ mysql_root_password }}"
           socket={{ socket_path }}
 
-    - name: 10. Start Async Node Service
+    - name: 8. Start Async Node Service
       service:
         name: mariadb
         state: started
@@ -138,6 +110,10 @@
   tasks:
     - name: Bootstrap the New Cluster
       command: galera_new_cluster
+      # Only bootstrap if not already running
+      register: bootstrap_cmd
+      changed_when: bootstrap_cmd.rc == 0
+      failed_when: false 
     
     - name: Ensure Leader Service is Active
       service:
