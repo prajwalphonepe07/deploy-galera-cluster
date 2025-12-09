@@ -18,6 +18,8 @@
     - item.value.partitions | length == 0        # Rule 2: No Partitions
     - item.value.removable == "0"                # Rule 3: Not Removable
     - item.value.size | human_to_bytes > 2147483648  # Rule 4: > 2GB
+    - not item.key.startswith('dm-')
+    - not item.key.startswith('loop')
   loop: "{{ ansible_devices | dict2items }}"
   no_log: true
 
