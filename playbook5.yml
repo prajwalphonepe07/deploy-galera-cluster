@@ -22,7 +22,7 @@
         fuser -k -m /var/lib/galera_cache || true
       ignore_errors: true
 
-    - name: 2a. Force Unmount Directories
+    - name: 2. Force Unmount Directories
       shell: "umount -l {{ item }} || true"
       loop:
         - /var/lib/mysql
@@ -30,8 +30,21 @@
         - /var/tmp/mysql
         - /var/lib/galera_cache
       ignore_errors: true
+    
+    - name: 3. Remove LVM Groups and Volumes
+      community.general.lvg:
+        vg: mysql_vg
+        state: absent
+        force: yes
+      ignore_errors: true
 
-    - name: 2b. DESTROY Existing Data and Logs
+    # 4. CLEAN FILESYSTEM
+    - name: 4. Wipe Partition Markers
+      shell: "wipefs -a /dev/sdb || true"
+      when: "'sdb' in ansible_devices"
+      ignore_errors: true
+
+    - name: 5. DESTROY Existing Data and Logs
       file:
         path: "{{ item }}"
         state: absent
