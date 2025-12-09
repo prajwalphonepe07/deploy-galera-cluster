@@ -1,4 +1,9 @@
 [mysqld]
+
+datadir = /var/lib/mysql
+tmpdir  = /var/tmp/mysql
+
+
 # 1. Loop through the JSON parameters from Jenkins
 {% for key, value in galera_final_config.items() %}
 {% if key != 'wsrep_provider' %}
@@ -6,9 +11,11 @@
 {% endif %}
 {% endfor %}
 
+
 # 2. Hardcoded / Template specific settings
 wsrep_provider = {{ galera_final_config.wsrep_provider | default(galera_lib_path) }}
-wsrep_provider_options = "{{ wsrep_provider_options_string }}"
+
+wsrep_provider_options = "gcache.dir=/var/lib/galera_cache;{{ wsrep_provider_options_string }}"
 
 binlog_format = ROW
 default_storage_engine = InnoDB

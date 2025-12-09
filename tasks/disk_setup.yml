@@ -1,0 +1,92 @@
+---
+- name: Install LVM2 dependencies
+  apt:
+    name: lvm2
+    state: present
+    update_cache: yes
+
+- name: Identify the root disk device (safely)
+  shell: lsblk -no pkname $(findmnt -n -o SOURCE /)
+  register: root_disk_cmd
+  changed_when: false
+
+- name: Find all empty, unpartitioned disks
+  set_fact:
+    available_disks: "{{ available_disks | default([]) + ['/dev/' + item.key] }}"
+  when:
+    - item.key != root_disk_cmd.stdout           # Rule 1: Not Root
+    - item.value.partitions | length == 0        # Rule 2: No Partitions
+    - item.value.removable == "0"                # Rule 3: Not Removable
+    - item.value.size | human_to_bytes > 2147483648  # Rule 4: > 2GB
+  loop: "{{ ansible_devices | dict2items }}"
+  no_log: true
+
+- block:
+    - name: Display Found Disks
+      debug:
+        msg: "Setting up LVM on: {{ available_disks }}"
+
+    - name: Create Volume Group 'mysql_vg'
+      lvg:
+        vg: mysql_vg
+        pvs: "{{ available_disks | join(',') }}" # Combines all disks
+        state: present
+
+    - name: Create LV Logs (3GB)
+      lvol:
+        vg: mysql_vg
+        lv: lv_logs
+        size: 3g
+
+    - name: Create LV Temp (3GB)
+      lvol:
+        vg: mysql_vg
+        lv: lv_tmp
+        size: 3g
+
+    - name: Create LV Galera Cache (3GB)
+      lvol:
+        vg: mysql_vg
+        lv: lv_gcache
+        size: 3g
+
+    - name: Create LV Data (Remaining Space)
+      lvol:
+        vg: mysql_vg
+        lv: lv_data
+        size: 100%FREE
+
+    - name: Format Volumes (XFS)
+      filesystem:
+        fstype: xfs
+        dev: "/dev/mysql_vg/{{ item }}"
+      loop:
+        - lv_logs
+        - lv_tmp
+        - lv_gcache
+        - lv_data
+
+    - name: Create Mount Points
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - { path: '/var/log/mysql' }
+        - { path: '/var/tmp/mysql' }
+        - { path: '/var/lib/galera_cache' }
+        - { path: '/var/lib/mysql' }
+
+    - name: Mount Logical Volumes
+      mount:
+        path: "{{ item.path }}"
+        src: "/dev/mysql_vg/{{ item.lv }}"
+        fstype: xfs
+        state: mounted
+      loop:
+        - { path: '/var/log/mysql', lv: 'lv_logs' }
+        - { path: '/var/tmp/mysql', lv: 'lv_tmp' }
+        - { path: '/var/lib/galera_cache', lv: 'lv_gcache' }
+        - { path: '/var/lib/mysql', lv: 'lv_data' }
+
+  when: available_disks is defined and available_disks | length > 0

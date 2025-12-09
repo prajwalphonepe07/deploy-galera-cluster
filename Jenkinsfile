@@ -78,7 +78,7 @@ pipeline {
         stage('Run Ansible') {
             steps {
                 sh """
-                    sudo -E ansible-playbook -i inventory.ini playbook4.yml \
+                    sudo -E ansible-playbook -i inventory.ini playbook5.yml \
                     --extra-vars "@pipeline_inputs.json"
                 """
             }
