@@ -12,13 +12,18 @@
 
   tasks:
     - name: 1. Force Stop Any Running MariaDB
-      shell: "pkill -9 mariadbd || true"
+      shell: |
+        systemctl stop mariadb || true
+        pkill -9 mariadbd || true
+        # fuser -k kills any process accessing these folders
+        fuser -k -m /var/lib/mysql || true
+        fuser -k -m /var/log/mysql || true
+        fuser -k -m /var/tmp/mysql || true
+        fuser -k -m /var/lib/galera_cache || true
       ignore_errors: true
 
-    - name: 2a. Unmount MySQL directories if they exist
-      mount:
-        path: "{{ item }}"
-        state: unmounted
+    - name: 2a. Force Unmount Directories
+      shell: "umount -l {{ item }} || true"
       loop:
         - /var/lib/mysql
         - /var/log/mysql
@@ -40,7 +45,6 @@
         - /etc/mysql/mariadb.conf.d/99-galera.cnf
         - /etc/mysql/mariadb.conf.d/50-async-server.cnf
 
-    # --- DISK SETUP (Run disk_setup.yml) ---
     - name: 3. Setup Disks (LVM)
       import_tasks: tasks/disk_setup.yml
 
