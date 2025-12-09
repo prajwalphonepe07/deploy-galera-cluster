@@ -33,13 +33,14 @@
       loop:
         - /var/lib/mysql
         - /var/log/mysql
-        - /var/tmp/mysql    
-        - /var/lib/galera_cache 
+        - /var/tmp/mysql
+        - /var/lib/galera_cache
         - /root/.my.cnf
         - /etc/mysql/mariadb.conf.d/60-mariadb.cnf
         - /etc/mysql/mariadb.conf.d/99-galera.cnf
         - /etc/mysql/mariadb.conf.d/50-async-server.cnf
 
+    # --- DISK SETUP (Run disk_setup.yml) ---
     - name: 3. Setup Disks (LVM)
       import_tasks: tasks/disk_setup.yml
 
@@ -54,7 +55,7 @@
       shell: "ln -s /etc/apparmor.d/usr.sbin.mariadbd /etc/apparmor.d/disable/ || true; apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd || true"
       ignore_errors: true
 
-    - name: 6. Set Directory Permissions
+    - name: 6. Set Directory Permissions (After Mount)
       file:
         path: "{{ item }}"
         state: directory
@@ -64,8 +65,8 @@
       loop:
         - /var/lib/mysql
         - /var/log/mysql
-        - /var/tmp/mysql        
-        - /var/lib/galera_cache 
+        - /var/tmp/mysql
+        - /var/lib/galera_cache
         - /var/run/mysqld
 
     - name: 7. Initialize Fresh System Tables
@@ -81,6 +82,7 @@
         - { src: 'galera.cnf.j2', dest: '99-galera.cnf' }
       when: inventory_hostname in groups['mariadb_nodes']
 
+    # FIXED: Indentation of 'when' corrected below
     - name: 8b. Deploy Async Slave Config
       copy:
         dest: /etc/mysql/mariadb.conf.d/50-async-server.cnf
@@ -93,7 +95,7 @@
           bind-address=0.0.0.0
           datadir=/var/lib/mysql
           tmpdir=/var/tmp/mysql
-        when: inventory_hostname in groups['async_node']
+      when: inventory_hostname in groups['async_node']
 
     - name: 9. Create Client Config
       copy:

@@ -13,8 +13,7 @@ tmpdir  = /var/tmp/mysql
 
 
 # 2. Hardcoded / Template specific settings
-wsrep_provider = {{ galera_final_config.wsrep_provider | default(galera_lib_path) }}
-
+wsrep_provider = {{ galera_final_config.wsrep_provider | default('/usr/lib/libgalera_smm.so') }}
 wsrep_provider_options = "gcache.dir=/var/lib/galera_cache;{{ wsrep_provider_options_string }}"
 
 binlog_format = ROW
