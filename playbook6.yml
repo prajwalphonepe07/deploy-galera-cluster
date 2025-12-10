@@ -162,6 +162,16 @@
   serial: 1
 
   tasks:
+    - name: Clean Stale Galera State (If corrupted)
+      file:
+        path: "/var/lib/mysql/{{ item }}"
+        state: absent
+      loop:
+        - grastate.dat
+        - gvwstate.dat
+        - tc.log
+      ignore_errors: true
+
     - name: Start MariaDB (Join Cluster)
       service:
         name: mariadb
