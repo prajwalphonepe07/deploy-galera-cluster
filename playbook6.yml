@@ -36,7 +36,7 @@
         target_disks: "{{ target_disks | default([]) + ['/dev/' + item.key] }}"
       when:
         - item.key != root_disk_name
-        - not item.key.startswith(('loop', 'ram', 'sr'))
+        - not item.key.startswith(('loop', 'ram', 'sr', 'dm'))
         - item.value.size | human_to_bytes > 5368709120
       loop: "{{ ansible_devices | dict2items }}"
       loop_control:
@@ -83,11 +83,13 @@
         name: "{{ galera_packages }}"
         state: present
         update_cache: yes
+ 
 
-    # --- APPARMOR (Simple) ---
-    - name: Disable AppArmor for MariaDB
-      command: aa-disable usr.sbin.mariadbd
+    - name: 3. Disable AppArmor
+      shell: "ln -s /etc/apparmor.d/usr.sbin.mariadbd /etc/apparmor.d/disable/ || true; apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd || true"
       ignore_errors: true
+
+ 
 
     # --- CONFIGURATION ---
     - name: Stop MariaDB for Configuration
