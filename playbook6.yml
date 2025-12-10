@@ -213,7 +213,13 @@
       service:
         name: mariadb
         state: started
-    
+
+    - name: Stop Replication (To Allow Config Change)
+      community.mysql.mysql_replication:
+        mode: stopreplica
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      ignore_errors: true 
+
     - name: Configure Replication Source
       community.mysql.mysql_replication:
         mode: changeprimary
