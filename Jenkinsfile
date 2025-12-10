@@ -83,7 +83,7 @@ pipeline {
                     file(credentialsId: 'GALERA_SERVER_KEY', variable: 'SERVER_KEY')
                 ]) {
                     script {
-			sh "sudo rm -rf files/certs"
+			sh "sudo rm -rf certs"
                         // 2. Create the directory in the workspace
                         sh "mkdir -p certs"
 
