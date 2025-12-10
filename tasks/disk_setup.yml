@@ -15,7 +15,8 @@
         vg: mysql_vg
         pvs: "{{ target_disks | join(',') }}"
         state: present
-    
+        force: yes
+
     - name: Ensure Fixed Logical Volumes exist
       community.general.lvol:
         vg: mysql_vg

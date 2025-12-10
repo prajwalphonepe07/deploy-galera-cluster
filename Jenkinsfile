@@ -7,7 +7,7 @@ pipeline {
         string(name: 'APP_USER', defaultValue: 'app_user', description: 'App User')
         string(name: 'APP_PASS', defaultValue: 'AppPass789!', description: 'App Password')
         string(name: 'ASYNC_HOST', defaultValue: '192.168.56.27', description: 'Async Node IP')
-       
+        booleanParam(name: 'FORCE_WIPE', defaultValue: false, description: 'Destroy all data before installation')       
  
         text(name: 'SQL_CONFIG_JSON', description: 'MariaDB Config', defaultValue: '''{
   "user": "mysql",
@@ -66,7 +66,8 @@ pipeline {
                       "wsrep_provider_options_string": "gcache.size=512M;gcache.recover=ON",
                       "mysql_root_password": "${params.DB_ROOT_PASS}",
                       "app_user_name": "${params.APP_USER}",
-                      "app_user_password": "${params.APP_PASS}"
+                      "app_user_password": "${params.APP_PASS}",
+                      "force_wipe": ${params.FORCE_WIPE}
                     }
                     """
                     
@@ -78,7 +79,7 @@ pipeline {
         stage('Run Ansible') {
             steps {
                 sh """
-                    sudo -E ansible-playbook -i inventory.ini playbook5.yml \
+                    sudo -E ansible-playbook -i inventory.ini playbook6.yml \
                     --extra-vars "@pipeline_inputs.json"
                 """
             }

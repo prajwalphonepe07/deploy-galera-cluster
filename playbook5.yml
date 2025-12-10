@@ -20,10 +20,50 @@
       set_fact:
         target_disks: "{{ target_disks | default([]) + ['/dev/' + item.key] }}"
       when:
-        - item.key != root_disk_check.stdout
-        - item.key | regex_search('sd[a-z]|nvme[0-9]n[0-9]')
-        - item.value.size | human_to_bytes > 5368709120
+        - item.key != root_disk_check.stdout          # Not Root
+        - not item.key.startswith('loop')             # Not Loopback
+        - not item.key.startswith('ram')              # Not RAM disk
+        - not item.key.startswith('sr')               # Not CD-ROM
+        - item.value.size | human_to_bytes > 5368709120 # > 5GB
       loop: "{{ ansible_devices | dict2items }}"
+      loop_control:
+        label: "{{ item.key }} ({{ item.value.size }})"
+
+    - name: Safety Check - No Disks Found
+      fail:
+        msg: "No valid data disks > 5GB found."
+      when: target_disks is not defined
+    
+    - name: FORCE WIPE (Clean Slate)
+      block:
+        - name: Notify User
+          debug:
+            msg: "FORCE WIPE ENABLED! Destroying data on {{ target_disks }}..."
+
+        - name: Kill Processes
+          shell: |
+            systemctl stop mariadb || true
+            pkill -9 mariadbd || true
+            fuser -k -m /var/lib/mysql || true
+          ignore_errors: true
+        
+        - name: Unmount Everything
+          shell: "umount -l /var/lib/mysql /var/log/mysql /var/tmp/mysql /var/lib/galera_cache || true"
+          ignore_errors: true
+
+        - name: Destroy LVM Groups
+          community.general.lvg:
+            vg: mysql_vg
+            state: absent
+            force: yes
+          ignore_errors: true
+
+        - name: Wipe Raw Disk Signatures
+          shell: "wipefs -a {{ item }} || true"
+          loop: "{{ target_disks }}"
+      
+      # The Logic: Run if variable is defined AND true. Default is False.
+      when: force_wipe | default(false) | bool      
 
     # Calls the external task file to handle LVM and Mounts safely
     - name: 1. Configure Disk and Mounts (Smart Mode)
