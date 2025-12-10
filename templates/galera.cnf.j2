@@ -32,4 +32,4 @@ log_slave_updates=1
 
 server_id={{ 100 + (ansible_default_ipv4.address.split('.')[-1] | int) }}
 
-wsrep_provider_options="socket.ssl_key=/etc/mysql/ssl/server-key.pem;socket.ssl_cert=/etc/mysql/ssl/server-cert.pem;socket.ssl_ca=/etc/mysql/ssl/ca.pem;gcache.size=1G"
+wsrep_provider_options="socket.ssl_key=/etc/mysql/ssl/server-key.pem;socket.ssl_cert=/etc/mysql/ssl/server-cert.pem;socket.ssl_ca=/etc/mysql/ssl/ca.pem;gcache.size=1G;gcache.name=/var/lib/galera_cache/galera.cache"
