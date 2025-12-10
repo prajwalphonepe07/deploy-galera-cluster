@@ -148,7 +148,6 @@
         line: 'safe_to_bootstrap: 1'
       ignore_errors: true 
 
-  tasks:
     - name: Bootstrap Cluster
       command: galera_new_cluster
 
