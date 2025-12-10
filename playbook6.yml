@@ -83,7 +83,13 @@
         name: "{{ galera_packages }}"
         state: present
         update_cache: yes
- 
+    
+    - name: Initialize System Tables
+      command: mariadb-install-db --user=mysql --datadir=/var/lib/mysql
+      args:
+        creates: /var/lib/mysql/mysql
+
+
 
     - name: 3. Disable AppArmor
       shell: "ln -s /etc/apparmor.d/usr.sbin.mariadbd /etc/apparmor.d/disable/ || true; apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd || true"
