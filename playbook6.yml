@@ -1,7 +1,4 @@
 ---
-# ==============================================================================
-# PLAY 1: PREPARE HARDWARE & INSTALL SOFTWARE
-# ==============================================================================
 - name: Play 1 - Prepare Infrastructure (All Nodes)
   hosts: all
   become: true
@@ -42,7 +39,6 @@
       loop_control:
         label: "{{ item.key }}"
 
-    # --- SAFETY WIPE LOGIC ---
     - name: FORCE WIPE (Clean Slate)
       block:
         - name: Stop MariaDB (If running)
@@ -72,12 +68,10 @@
         - force_wipe | default(false) | bool
         - target_disks is defined
 
-    # --- DISK SETUP ---
     - name: Configure Disk and Mounts
       import_tasks: tasks/disk_setup.yml
       when: target_disks is defined
 
-    # --- INSTALLATION ---
     - name: Install MariaDB Packages
       apt:
         name: "{{ galera_packages }}"
@@ -89,19 +83,34 @@
       args:
         creates: /var/lib/mysql/mysql
 
-
-
-    - name: 3. Disable AppArmor
+    - name: Disable AppArmor
       shell: "ln -s /etc/apparmor.d/usr.sbin.mariadbd /etc/apparmor.d/disable/ || true; apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd || true"
       ignore_errors: true
 
- 
-
-    # --- CONFIGURATION ---
     - name: Stop MariaDB for Configuration
       service:
         name: mariadb
         state: stopped
+    
+    - name: Ensure SSL Directory Exists
+      file:
+        path: /etc/mysql/ssl
+        state: directory
+        owner: mysql
+        group: mysql
+        mode: '0700'
+
+    - name: Distribute SSL Certificates
+      copy:
+        src: "certs/{{ item }}"
+        dest: "/etc/mysql/ssl/{{ item }}"
+        owner: mysql
+        group: mysql
+        mode: '0600'
+      loop:
+        - ca.pem
+        - server-cert.pem
+        - server-key.pem
 
     - name: Deploy Cluster Configs
       template:
@@ -126,10 +135,6 @@
           datadir=/var/lib/mysql
       when: inventory_hostname in groups['async_node']
 
-
-# ==============================================================================
-# PLAY 2: BOOTSTRAP CLUSTER (Leader Only)
-# ==============================================================================
 - name: Play 2 - Bootstrap Cluster
   hosts: "{{ groups['mariadb_nodes'][0] }}"
   become: true
@@ -143,10 +148,6 @@
         port: 3306
         timeout: 60
 
-
-# ==============================================================================
-# PLAY 3: JOIN FOLLOWERS
-# ==============================================================================
 - name: Play 3 - Join Cluster
   hosts: "{{ groups['mariadb_nodes'][1:] }}"
   become: true
@@ -167,12 +168,8 @@
       retries: 30
       delay: 10
 
-
-# ==============================================================================
-# PLAY 4: SECURITY & REPLICATION SETUP
-# ==============================================================================
 - name: Play 4 - Security & Master Setup
-  hosts: "{{ groups['mariadb_nodes'][0] }}"
+  hosts: "{{ groups['mariadb_nodes'][2] }}"
   become: true
   
   tasks:
@@ -207,9 +204,6 @@
       register: master_status
 
 
-# ==============================================================================
-# PLAY 5: CONFIGURE ASYNC SLAVE
-# ==============================================================================
 - name: Play 5 - Configure Async Slave
   hosts: "{{ groups['async_node'] }}"
   become: true
@@ -223,13 +217,13 @@
     - name: Configure Replication Source
       community.mysql.mysql_replication:
         mode: changeprimary
-        primary_host: "{{ groups['mariadb_nodes'][0] }}"
+        primary_host: "{{ groups['mariadb_nodes'][2] }}"
         primary_user: repl_user
         primary_password: "{{ mysql_root_password }}"
-        primary_log_file: "{{ hostvars[groups['mariadb_nodes'][0]]['master_status']['File'] }}"
-        primary_log_pos: "{{ hostvars[groups['mariadb_nodes'][0]]['master_status']['Position'] }}"
+        primary_log_file: "{{ hostvars[groups['mariadb_nodes'][2]]['master_status']['File'] }}"
+        primary_log_pos: "{{ hostvars[groups['mariadb_nodes'][2]]['master_status']['Position'] }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
-      when: hostvars[groups['mariadb_nodes'][0]]['master_status'] is defined       
+      when: hostvars[groups['mariadb_nodes'][2]]['master_status'] is defined       
 
 
     - name: Start Replication
@@ -238,9 +232,6 @@
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
 
-# ==============================================================================
-# PLAY 6: VERIFY DEPLOYMENT
-# ==============================================================================
 - name: Play 6 - Verify Cluster Health
   hosts: "{{ groups['mariadb_nodes'][0] }}"
   become: true

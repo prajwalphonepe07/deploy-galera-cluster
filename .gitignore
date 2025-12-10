@@ -1,0 +1,7 @@
+# Ignore SSH and SSL Keys (SECURITY)
+*.pem
+*.key
+*.csr
+*.crt
+certs/
+ssh/
