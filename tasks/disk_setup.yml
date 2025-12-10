@@ -75,3 +75,16 @@
         - { path: '/var/tmp/mysql', lv: 'lv_tmp' }
         - { path: '/var/lib/galera_cache', lv: 'lv_gcache' }
         - { path: '/var/lib/mysql', lv: 'lv_data' }
+
+    - name: Set Ownership on Mounted Directories
+      file:
+        path: "{{ item }}"
+        owner: mysql
+        group: mysql
+        mode: '0755'
+        state: directory
+      loop:
+        - /var/log/mysql
+        - /var/tmp/mysql
+        - /var/lib/galera_cache
+        - /var/lib/mysql

@@ -219,8 +219,8 @@
       service:
         name: mariadb
         state: started
-
-    - name: Configure Replication Source
+    
+     - name: Configure Replication Source
       community.mysql.mysql_replication:
         mode: changeprimary
         primary_host: "{{ groups['mariadb_nodes'][0] }}"
@@ -229,6 +229,8 @@
         primary_log_file: "{{ hostvars[groups['mariadb_nodes'][0]]['master_status']['File'] }}"
         primary_log_pos: "{{ hostvars[groups['mariadb_nodes'][0]]['master_status']['Position'] }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
+      when: hostvars[groups['mariadb_nodes'][0]]['master_status'] is defined       
+
 
     - name: Start Replication
       community.mysql.mysql_replication:
