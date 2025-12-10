@@ -83,13 +83,14 @@ pipeline {
                     file(credentialsId: 'GALERA_SERVER_KEY', variable: 'SERVER_KEY')
                 ]) {
                     script {
+			sh "sudo rm -rf files/certs"
                         // 2. Create the directory in the workspace
                         sh "mkdir -p certs"
 
                         // 3. Copy the injected secrets to the folder Ansible expects
-                        sh "cp $CA_PEM certs/ca.pem"
-                        sh "cp $SERVER_CERT certs/server-cert.pem"
-                        sh "cp $SERVER_KEY certs/server-key.pem"
+                        sh 'cp "$CA_PEM" certs/ca.pem'
+                        sh 'cp "$SERVER_CERT" certs/server-cert.pem'
+                        sh 'cp "$SERVER_KEY" certs/server-key.pem'
 
                         sh """
                             sudo -E ansible-playbook -i inventory.ini playbook6.yml \
