@@ -220,7 +220,7 @@
         name: mariadb
         state: started
     
-     - name: Configure Replication Source
+    - name: Configure Replication Source
       community.mysql.mysql_replication:
         mode: changeprimary
         primary_host: "{{ groups['mariadb_nodes'][0] }}"
