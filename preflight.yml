@@ -117,7 +117,16 @@
   
   tasks:
     - name: Collect All Node Reports
-      shell: "jq -s '.' /tmp/preflight_*.json"
+      shell: |
+        python3 -c "
+        import json
+        import glob
+        reports = []
+        for f in sorted(glob.glob('/tmp/preflight_*.json')):
+            with open(f) as fp:
+                reports.append(json.load(fp))
+        print(json.dumps(reports))
+        "
       register: all_reports_raw
       changed_when: false
 
