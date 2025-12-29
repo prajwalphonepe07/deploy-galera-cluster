@@ -258,7 +258,16 @@
       community.mysql.mysql_replication:
         mode: startreplica
         login_unix_socket: /var/run/mysqld/mysqld.sock
-
+    - name: Verify Replication Started
+      community.mysql.mysql_replication:
+        mode: getreplica
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      register: slave_status
+      failed_when: 
+        - slave_status.Slave_IO_Running != "Yes"
+        - slave_status.Slave_SQL_Running != "Yes"
+      retries: 3
+      delay: 5
 
 - name: Play 6 - Verify Cluster Health
   hosts: "{{ groups['mariadb_nodes'][0] }}"
