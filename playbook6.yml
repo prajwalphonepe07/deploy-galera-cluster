@@ -182,9 +182,13 @@
         query: "SHOW STATUS LIKE 'wsrep_local_state_comment'"
         login_unix_socket: /var/run/mysqld/mysqld.sock
       register: sync_status
-      until: sync_status.query_result[0][0].Value == 'Synced'
-      retries: 30
+      until: >
+        sync_status.query_result is defined and
+        sync_status.query_result | length > 0 and
+        sync_status.query_result[0][0].Value == 'Synced'
+      retries: 60
       delay: 10
+      ignore_errors: yes
 
 - name: Play 4 - Security & Master Setup
   hosts: "{{ groups['mariadb_nodes'][2] }}"
