@@ -117,13 +117,13 @@
   
   tasks:
     - name: Collect All Node Reports
-      shell: "cat /tmp/preflight_*.json"
-      register: all_reports
+      shell: "jq -s '.' /tmp/preflight_*.json"
+      register: all_reports_raw
       changed_when: false
 
     - name: Parse All Reports
       set_fact:
-        all_nodes: "{{ all_reports.stdout_lines | map('from_json') | list }}"
+        all_nodes: "{{ all_reports_raw.stdout | from_json }}"
 
     - name: Determine Overall Status
       set_fact:
@@ -165,6 +165,7 @@
         state: absent
       loop: "{{ groups['all'] }}"
       ignore_errors: true
+      become: false
 
     - name: Fail Playbook if Preflight Failed
       fail:

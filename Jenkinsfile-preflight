@@ -92,7 +92,6 @@ pipeline {
         always {
             echo "Cleaning up temporary files..."
             sh 'rm -f inventory_preflight.ini'
-            sh 'rm -f /tmp/preflight_*.json'
         }
     }
 }
