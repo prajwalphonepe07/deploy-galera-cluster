@@ -9,7 +9,7 @@
   gather_facts: yes
   become: true
   vars:
-    min_ram_mb: 2048
+    min_ram_mb: 1024
     min_disk_gb: 10
     preflight_status: "SUCCESS"
     preflight_errors: []
