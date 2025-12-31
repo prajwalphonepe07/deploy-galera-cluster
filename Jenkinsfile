@@ -10,10 +10,10 @@ pipeline {
         booleanParam(name: 'FORCE_WIPE', defaultValue: false, description: 'Auto-determined from preflight results - cleans existing MySQL installation if detected')
         
         // Disk Allocation Parameters
-        string(name: 'LV_LOGS_SIZE', defaultValue: '3g', description: 'Logs partition size (auto-calculated from allocation)')
-        string(name: 'LV_TMP_SIZE', defaultValue: '3g', description: 'Tmp partition size (auto-calculated from allocation)')
-        string(name: 'LV_GCACHE_SIZE', defaultValue: '3g', description: 'GCache partition size (auto-calculated from allocation)')
-        string(name: 'MIN_VG_SIZE_GB', defaultValue: '0', description: 'Minimum VG size from preflight (for reference/logging)')
+        string(name: 'LV_LOGS_SIZE', description: 'Logs partition size (auto-calculated from allocation)')
+        string(name: 'LV_TMP_SIZE',  description: 'Tmp partition size (auto-calculated from allocation)')
+        string(name: 'LV_GCACHE_SIZE', description: 'GCache partition size (auto-calculated from allocation)')
+        string(name: 'MIN_VG_SIZE_GB', description: 'Minimum VG size from preflight (for reference/logging)')
  
         text(name: 'SQL_CONFIG_JSON', description: 'MariaDB Config', defaultValue: '''{
   "user": "mysql",
