@@ -14,6 +14,7 @@ pipeline {
         string(name: 'LV_TMP_SIZE',  description: 'Tmp partition size (auto-calculated from allocation)')
         string(name: 'LV_GCACHE_SIZE', description: 'GCache partition size (auto-calculated from allocation)')
         string(name: 'MIN_VG_SIZE_GB', description: 'Minimum VG size from preflight (for reference/logging)')
+        string(name: 'GCACHE_SIZE', description: 'GCache size for wsrep_provider_options (auto-calculated as 80% of partition)')
  
         text(name: 'SQL_CONFIG_JSON', description: 'MariaDB Config', defaultValue: '''{
   "user": "mysql",
@@ -68,7 +69,7 @@ pipeline {
                     {
                       "sql_final_config": ${params.SQL_CONFIG_JSON},
                       "galera_final_config": ${params.GALERA_CONFIG_JSON},
-                      "wsrep_provider_options_string": "gcache.size=512M;gcache.recover=ON",
+		      "wsrep_provider_options_string": "gcache.size=${params.GCACHE_SIZE};gcache.recover=ON",
                       "mysql_root_password": "${params.DB_ROOT_PASS}",
                       "app_user_name": "${params.APP_USER}",
                       "app_user_password": "${params.APP_PASS}",
