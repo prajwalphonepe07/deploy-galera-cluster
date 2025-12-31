@@ -7,13 +7,7 @@ pipeline {
         string(name: 'APP_USER', defaultValue: 'app_user', description: 'App User')
         string(name: 'APP_PASS', defaultValue: 'AppPass789!', description: 'App Password')
         string(name: 'ASYNC_HOST', defaultValue: '192.168.56.27', description: 'Async Node IP')
-        booleanParam(name: 'FORCE_WIPE', defaultValue: false, description: 'Auto-determined from preflight results - cleans existing MySQL installation if detected')
-        
-        // Disk Allocation Parameters
-        string(name: 'LV_LOGS_SIZE', defaultValue: '3g', description: 'Logs partition size (auto-calculated from allocation)')
-        string(name: 'LV_TMP_SIZE', defaultValue: '3g', description: 'Tmp partition size (auto-calculated from allocation)')
-        string(name: 'LV_GCACHE_SIZE', defaultValue: '3g', description: 'GCache partition size (auto-calculated from allocation)')
-        string(name: 'MIN_VG_SIZE_GB', defaultValue: '0', description: 'Minimum VG size from preflight (for reference/logging)')
+        booleanParam(name: 'FORCE_WIPE', defaultValue: false, description: 'Destroy all data before installation')
  
         text(name: 'SQL_CONFIG_JSON', description: 'MariaDB Config', defaultValue: '''{
   "user": "mysql",
@@ -72,11 +66,7 @@ pipeline {
                       "mysql_root_password": "${params.DB_ROOT_PASS}",
                       "app_user_name": "${params.APP_USER}",
                       "app_user_password": "${params.APP_PASS}",
-                      "force_wipe": ${params.FORCE_WIPE},
-                      "lv_logs_size": "${params.LV_LOGS_SIZE}",
-                      "lv_tmp_size": "${params.LV_TMP_SIZE}",
-                      "lv_gcache_size": "${params.LV_GCACHE_SIZE}",
-                      "min_vg_size_gb": "${params.MIN_VG_SIZE_GB}"
+                      "force_wipe": ${params.FORCE_WIPE}
                     }
                     """
                     
@@ -111,5 +101,4 @@ pipeline {
             }
         }
     } 
-}
-
+} 

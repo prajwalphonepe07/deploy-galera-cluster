@@ -23,9 +23,9 @@
         lv: "{{ item.name }}"
         size: "{{ item.size }}"
       loop:
-        - { name: 'lv_logs', size: '{{ lv_logs_size | default("3g") }}' }
-        - { name: 'lv_tmp', size: '{{ lv_tmp_size | default("3g") }}' }
-        - { name: 'lv_gcache', size: '{{ lv_gcache_size | default("3g") }}' }
+        - { name: 'lv_logs', size: '3g' }
+        - { name: 'lv_tmp', size: '3g' }
+        - { name: 'lv_gcache', size: '3g' }
 
     - name: Check if lv_data exists
       shell: "lvs mysql_vg/lv_data"
@@ -88,4 +88,3 @@
         - /var/tmp/mysql
         - /var/lib/galera_cache
         - /var/lib/mysql
-

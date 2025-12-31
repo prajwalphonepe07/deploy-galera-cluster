@@ -9,7 +9,7 @@
   gather_facts: yes
   become: true
   vars:
-    min_ram_mb: 2048
+    min_ram_mb: 1024
     min_disk_gb: 10
     preflight_status: "SUCCESS"
     preflight_errors: []
@@ -75,39 +75,6 @@
         - ping_result is succeeded
         - total_disk_gb | float < min_disk_gb
 
-    # ===== LVM DETECTION =====
-    - name: Check for Existing MySQL Volume Group
-      shell: "vgs mysql_vg --noheadings -o vg_size --units g 2>/dev/null"
-      register: existing_vg
-      ignore_errors: true
-      changed_when: false
-      when: ping_result is succeeded
-
-    - name: Check for Existing Logical Volumes (Detailed)
-      shell: "lvs mysql_vg --noheadings -o lv_name,lv_size --units g 2>/dev/null"
-      register: existing_lvs
-      ignore_errors: true
-      changed_when: false
-      when: 
-        - ping_result is succeeded
-        - existing_vg.rc == 0
-
-    # ===== CALCULATE EXPECTED VG SIZE =====
-    - name: Calculate Expected VG Size (accounting for LVM overhead)
-      set_fact:
-        expected_vg_gb: "{{ (total_disk_gb | float * 0.995) | round(2) }}"
-      when: 
-        - ping_result is succeeded
-        - total_disk_gb is defined
-        - total_disk_gb | float > 0
-
-    - name: Set Expected VG to Zero if No Disks
-      set_fact:
-        expected_vg_gb: 0
-      when: 
-        - ping_result is succeeded
-        - (total_disk_gb is not defined or total_disk_gb | float == 0)
-
     # ===== BUILD PREFLIGHT REPORT =====
     - name: Build Node Preflight Report
       set_fact:
@@ -117,11 +84,7 @@
           status: "{{ preflight_status }}"
           ram_mb: "{{ ansible_memtotal_mb }}"
           available_disk_gb: "{{ total_disk_gb }}"
-          expected_vg_gb: "{{ expected_vg_gb | default(0) }}"
           disk_count: "{{ candidate_disks | default([]) | length }}"
-          has_existing_mysql: "{{ existing_vg.rc == 0 if existing_vg is defined else false }}"
-          existing_vg_size: "{{ existing_vg.stdout | trim if (existing_vg is defined and existing_vg.rc == 0) else null }}"
-          existing_lvs: "{{ existing_lvs.stdout_lines if (existing_lvs is defined and existing_lvs.rc == 0) else [] }}"
           errors: "{{ preflight_errors }}"
       when: ping_result is succeeded
 
