@@ -109,7 +109,7 @@
           expected_vg_gb: "{{ expected_vg_gb | default(0) }}"
           disk_count: "{{ candidate_disks | default([]) | length }}"
           has_existing_mysql: "{{ existing_vg.rc == 0 if existing_vg is defined else false }}"
-          existing_vg_size: "{{ existing_vg.stdout | trim if (existing_vg is defined and existing_vg.rc == 0) else null }}"
+          existing_vg_size: "{{ existing_vg.stdout | trim if (existing_vg is defined and existing_vg.rc == 0) else '0' }}"
           existing_lvs: "{{ existing_lvs.stdout_lines if (existing_lvs is defined and existing_lvs.rc == 0) else [] }}"
           errors: "{{ preflight_errors }}"
       when: ping_result is succeeded

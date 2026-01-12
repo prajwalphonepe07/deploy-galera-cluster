@@ -16,8 +16,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Git checkout happens automatically with "Pipeline script from SCM"
-                // This stage is just for visibility in the UI
                 echo "✓ Repository checked out to workspace: ${env.WORKSPACE}"
                 sh 'ls -la'
             }
@@ -28,7 +26,6 @@ pipeline {
                 script {
                     echo "Generating Ansible inventory for preflight checks..."
                     
-                    // Split comma-separated IPs into array
                     def galeraIps = params.TARGET_HOSTS.split(',')
                     
                     // Create inventory file
