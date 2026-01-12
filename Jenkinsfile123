@@ -16,6 +16,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Git checkout happens automatically with "Pipeline script from SCM"
                 // This stage is just for visibility in the UI
                 echo "✓ Repository checked out to workspace: ${env.WORKSPACE}"
                 sh 'ls -la'
@@ -86,11 +87,61 @@ pipeline {
         failure {
             echo "❌ Preflight checks failed!"
             echo "Preflight ID: ${params.PREFLIGHT_ID}"
+            echo "Jenkins Build: ${env.BUILD_NUMBER}"
+            
+            // Notify backend of failure ONLY if Ansible didn't already send results
+            script {
+                try {
+                    // First, check if results were already sent by Ansible
+                    def checkStatus = sh(
+                        script: """
+                            curl -s "${BACKEND_URL}/api/preflight/${params.PREFLIGHT_ID}" \
+                            -H "Content-Type: application/json" \
+                            | grep -o '"status":"[^"]*"' | cut -d'"' -f4
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    
+                    echo "Current preflight status in database: ${checkStatus}"
+                    
+                    // Only update if still RUNNING (Ansible didn't complete)
+                    if (checkStatus == "RUNNING") {
+                        echo "Ansible did not complete - sending failure notification to backend..."
+                        
+                        def response = sh(
+                            script: """
+                                curl -X POST "${BACKEND_URL}/api/preflight/${params.PREFLIGHT_ID}/complete" \
+                                -H "Content-Type: application/json" \
+                                -d '{
+                                    "status": "FAILED",
+                                    "results": [],
+                                    "error_message": "Jenkins Build #${env.BUILD_NUMBER} failed during preflight execution. Common causes: SSH connectivity issues, missing dependencies, or infrastructure problems. Check Jenkins console for details."
+                                }' \
+                                -w "%{http_code}" -o /dev/null -s
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (response == "200" || response == "201") {
+                            echo "✓ Backend notified of preflight failure"
+                        } else {
+                            echo "⚠ Backend notification returned HTTP ${response}"
+                        }
+                    } else {
+                        echo "✓ Ansible already sent results (status: ${checkStatus}) - skipping duplicate notification"
+                    }
+                } catch (Exception e) {
+                    echo "⚠ Failed to notify backend: ${e.message}"
+                    echo "Note: User will see timeout in UI after 3 minutes as fallback"
+                }
+            }
+            
             echo "Check the results in the backend UI for detailed error information"
         }
         always {
             echo "Cleaning up temporary files..."
             sh 'rm -f inventory_preflight.ini'
+            // Temp files cleanup handled by Ansible playbook
         }
     }
 }

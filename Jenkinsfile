@@ -6,7 +6,7 @@ pipeline {
         string(name: 'DB_ROOT_PASS', defaultValue: 'MySecurePass123!', description: 'Root Password')
         string(name: 'APP_USER', defaultValue: 'app_user', description: 'App User')
         string(name: 'APP_PASS', defaultValue: 'AppPass789!', description: 'App Password')
-        string(name: 'ASYNC_HOST', defaultValue: '192.168.56.27', description: 'Async Node IP')
+        string(name: 'ASYNC_HOST', defaultValue: '192.168.56.20', description: 'Async Node IP')
         booleanParam(name: 'FORCE_WIPE', defaultValue: false, description: 'Auto-determined from preflight results - cleans existing MySQL installation if detected')
         
         // Disk Allocation Parameters
