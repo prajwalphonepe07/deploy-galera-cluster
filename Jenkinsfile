@@ -104,7 +104,7 @@ pipeline {
                         sh 'cp "$SERVER_KEY" certs/server-key.pem'
 
                         sh """
-                            sudo -E ansible-playbook -i inventory.ini playbook6.yml \
+                            sudo -E ansible-playbook -i inventory.ini test_playbook.yml \
                             --extra-vars "@pipeline_inputs.json"
                         """
                     }

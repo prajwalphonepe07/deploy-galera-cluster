@@ -63,7 +63,7 @@ pipeline {
                     
                     try {
                         sh """
-                            sudo -E ansible-playbook -i inventory_preflight.ini preflight.yml \
+                            sudo -E ansible-playbook -i inventory_preflight.ini test_preflight_playbook.yml \
                             --extra-vars "preflight_id=${params.PREFLIGHT_ID}"
                         """
                     } catch (Exception e) {
