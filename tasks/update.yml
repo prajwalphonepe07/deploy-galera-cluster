@@ -33,11 +33,11 @@
       ignore_errors: true
       changed_when: false
 
-    - name: Ensure Data Volume exists (user-specified or 100%FREE)
+    - name: Ensure Data Volume exists (100% Remaining)
       community.general.lvol:
         vg: mysql_vg
         lv: lv_data
-        size: "{{ lv_data_size | default('100%FREE') }}"
+        size: 100%FREE
       when: lv_data_check.rc != 0
 
     - name: Ensure Filesystems are formatted (XFS)
