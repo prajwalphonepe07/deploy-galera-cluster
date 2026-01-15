@@ -13,6 +13,7 @@ pipeline {
         string(name: 'LV_LOGS_SIZE', description: 'Logs partition size (auto-calculated from allocation)')
         string(name: 'LV_TMP_SIZE',  description: 'Tmp partition size (auto-calculated from allocation)')
         string(name: 'LV_GCACHE_SIZE', description: 'GCache partition size (auto-calculated from allocation)')
+        string(name: 'LV_DATA_SIZE', defaultValue: '100%FREE', description: 'Data partition size (user-specified or 100%FREE)')
         string(name: 'MIN_VG_SIZE_GB', description: 'Minimum VG size from preflight (for reference/logging)')
         string(name: 'GCACHE_SIZE', description: 'GCache size for wsrep_provider_options (auto-calculated as 80% of partition)')
  
@@ -77,6 +78,7 @@ pipeline {
                       "lv_logs_size": "${params.LV_LOGS_SIZE}",
                       "lv_tmp_size": "${params.LV_TMP_SIZE}",
                       "lv_gcache_size": "${params.LV_GCACHE_SIZE}",
+                      "lv_data_size": "${params.LV_DATA_SIZE}",
                       "min_vg_size_gb": "${params.MIN_VG_SIZE_GB}"
                     }
                     """
